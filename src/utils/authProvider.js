@@ -55,7 +55,7 @@ export default {
             }
             console.log("token invalid - run refresh token")
 
-            return auth0.checkSession({
+            return auth0.getTokenSilently({
                 redirect_uri: CallbackURI
             })
                 .then(function (token) {
@@ -71,5 +71,8 @@ export default {
         })
     },
     // called when the user navigates to a new location, to check for permissions / roles
-    getPermissions: () => Promise.resolve(),
+    getPermissions: () => {
+        console.log("getPermissions")
+        return Promise.resolve()
+    },
 };
