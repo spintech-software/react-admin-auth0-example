@@ -1,28 +1,84 @@
+import authConfig from "./authConfig";
+import { Auth0Client } from '@auth0/auth0-spa-js';
+
+const auth0 = new Auth0Client({
+    domain: authConfig.domain,
+    client_id: authConfig.clientID,
+    cacheLocation: 'localstorage',
+    useRefreshTokens: true
+});
+
+const cleanup = () => {
+    console.log("Cleanup url")
+    // Remove the ?code&state from the URL
+    window.history.replaceState(
+        {},
+        window.document.title,
+        window.location.origin
+    );
+}
+
 export default {
     // called when the user attempts to log in
-    login: ({ username }) => {
-        localStorage.setItem('username', username);
-        // accept all username/password combinations
-        return Promise.resolve();
+    login: (url) => {
+        console.log("login")
+
+        if (typeof url === 'undefined') {
+            console.log("URL EMPTY FIRE LOGIN")
+            console.log(window.location.origin)
+            return auth0.loginWithRedirect({
+                redirect_uri: window.location.origin
+            })
+        }
+
+        console.log("URL IS HERE PROCESS CALLBACK")
+        cleanup()
+        return auth0.handleRedirectCallback(url);
     },
     // called when the user clicks on the logout button
     logout: () => {
-        localStorage.removeItem('username');
-        return Promise.resolve();
+        console.log("logout")
+        return auth0.isAuthenticated().then(function (isAuthenticated){
+            if (isAuthenticated) { // need to check for this as react-admin calls logout in case checkAuth failed
+                console.log("we was authenticated - logout from AUTH0 with redirect")
+                return auth0.logout({
+                    redirect_uri: window.location.origin,
+                    federated: true // have to be enabled to invalidate refresh token
+                });
+            }
+            console.log("we are logged out - just resolve")
+            return Promise.resolve()
+        })
     },
     // called when the API returns an error
     checkError: ({ status }) => {
+        console.log("checkError")
         if (status === 401 || status === 403) {
-            localStorage.removeItem('username');
             return Promise.reject();
         }
         return Promise.resolve();
     },
     // called when the user navigates to a new location, to check for authentication
     checkAuth: () => {
-        return localStorage.getItem('username')
-            ? Promise.resolve()
-            : Promise.reject();
+        console.log("checkAuth")
+        return auth0.isAuthenticated().then(function (isAuthenticated) {
+            if (isAuthenticated) {
+                console.log("token valid - we are authenticated")
+                return Promise.resolve();
+            }
+            console.log("token invalid - run refresh token")
+
+            return auth0.getTokenSilently().then(function (token) {
+                if (token !== "") {
+                    console.log("token refreshed")
+                    return Promise.resolve()
+                }
+
+            }).catch(function () {
+                console.log("token refresh failed")
+                return Promise.reject()
+            })
+        })
     },
     // called when the user navigates to a new location, to check for permissions / roles
     getPermissions: () => Promise.resolve(),
