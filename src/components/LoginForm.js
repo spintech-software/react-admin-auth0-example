@@ -5,7 +5,6 @@ import { userLogin as userLoginAction } from 'react-admin';
 import { withStyles, createStyles } from '@material-ui/core/styles';
 import CardActions from '@material-ui/core/CardActions';
 import Button from '@material-ui/core/Button';
-import CircularProgress from '@material-ui/core/CircularProgress';
 
 const styles = ({ spacing }) =>
     createStyles({
@@ -18,10 +17,9 @@ const styles = ({ spacing }) =>
     });
 
 const LoginForm = ({ classes, userLogin }) => {
-    const [loading, setLoading] = useState(false);
-
     useEffect(() => {
-        console.log("WE ARE ON LOGIN FORM")
+        console.log("login form rendered")
+        const location = window.location.href;
         const url = new URL(window.location.href);
         const { searchParams } = url ;
         const code = searchParams.get('code');
@@ -29,14 +27,12 @@ const LoginForm = ({ classes, userLogin }) => {
 
         // If code is present, we came back from the provider
         if (code && state) {
-            setLoading(true);
-            console.log("CALLBACK RECEIVED")
-            userLogin({ url });
+            console.log("oauth callback received")
+            userLogin({ location });
         }
     }, [userLogin]);
 
     const handleLogin = () => {
-        setLoading(true);
         userLogin(); // Do not provide code, just trigger the redirection
     };
 
@@ -48,15 +44,7 @@ const LoginForm = ({ classes, userLogin }) => {
                     type="submit"
                     color="primary"
                     onClick={handleLogin}
-                    disabled={loading}
                 >
-                    {loading && (
-                        <CircularProgress
-                            className={classes.icon}
-                            size={18}
-                            thickness={2}
-                        />
-                    )}
                     Login
                 </Button>
             </CardActions>
@@ -67,5 +55,6 @@ const LoginForm = ({ classes, userLogin }) => {
 const mapDispatchToProps = {
     userLogin: userLoginAction,
 }
+
 
 export default connect(undefined, mapDispatchToProps)(withStyles(styles)(LoginForm));

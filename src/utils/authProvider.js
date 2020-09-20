@@ -1,5 +1,5 @@
 import authConfig from "./authConfig";
-import { Auth0Client } from '@auth0/auth0-spa-js';
+import {Auth0Client} from '@auth0/auth0-spa-js';
 
 const auth0 = new Auth0Client({
     domain: authConfig.domain,
@@ -8,15 +8,7 @@ const auth0 = new Auth0Client({
     useRefreshTokens: true
 });
 
-const cleanup = () => {
-    console.log("Cleanup url")
-    // Remove the ?code&state from the URL
-    window.history.replaceState(
-        {},
-        window.document.title,
-        window.location.origin
-    );
-}
+const CallbackURI = "http://localhost:3000/login"
 
 export default {
     // called when the user attempts to log in
@@ -24,21 +16,16 @@ export default {
         console.log("login")
 
         if (typeof url === 'undefined') {
-            console.log("URL EMPTY FIRE LOGIN")
-            console.log(window.location.origin)
             return auth0.loginWithRedirect({
-                redirect_uri: window.location.origin
+                redirect_uri: CallbackURI
             })
         }
-
-        console.log("URL IS HERE PROCESS CALLBACK")
-        cleanup()
-        return auth0.handleRedirectCallback(url);
+        return auth0.handleRedirectCallback(url.location);
     },
     // called when the user clicks on the logout button
     logout: () => {
         console.log("logout")
-        return auth0.isAuthenticated().then(function (isAuthenticated){
+        return auth0.isAuthenticated().then(function (isAuthenticated) {
             if (isAuthenticated) { // need to check for this as react-admin calls logout in case checkAuth failed
                 console.log("we was authenticated - logout from AUTH0 with redirect")
                 return auth0.logout({
@@ -51,7 +38,7 @@ export default {
         })
     },
     // called when the API returns an error
-    checkError: ({ status }) => {
+    checkError: ({status}) => {
         console.log("checkError")
         if (status === 401 || status === 403) {
             return Promise.reject();
@@ -68,16 +55,19 @@ export default {
             }
             console.log("token invalid - run refresh token")
 
-            return auth0.getTokenSilently().then(function (token) {
-                if (token !== "") {
-                    console.log("token refreshed")
-                    return Promise.resolve()
-                }
-
-            }).catch(function () {
-                console.log("token refresh failed")
-                return Promise.reject()
+            return auth0.checkSession({
+                redirect_uri: CallbackURI
             })
+                .then(function (token) {
+                    if (token !== "") {
+                        console.log("token refreshed")
+                        return Promise.resolve()
+                    }
+                })
+                .catch(function () {
+                    console.log("token refresh failed")
+                    return Promise.reject()
+                })
         })
     },
     // called when the user navigates to a new location, to check for permissions / roles
