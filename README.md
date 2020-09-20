@@ -25,6 +25,7 @@ Allowed Origins (CORS): http://localhost:3000/
 ```
 export AUTH0_DOMAIN=""
 export AUTH0_CLIENT_ID=""
+export AUTH0_REDIRECT_URI="http://localhost:3000/login"
 ```
 
 ## References
@@ -32,5 +33,5 @@ export AUTH0_CLIENT_ID=""
 - https://auth0.com/docs/libraries/auth0-single-page-app-sdk
 
 ## TODO:
--[ ] add example of getting user details
--[ ] add example of authorizing api requests
+- add example of getting user details
+- add example of authorizing api requests
